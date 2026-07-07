@@ -1,0 +1,306 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:       #08080e;
+  --bg2:      #0d0d18;
+  --border:   #1e1e30;
+  --dim:      #505078;
+  --muted:    #6868a0;
+  --text:     #c0c0d8;
+  --wall-bg:  #181828;
+  --wall-fg:  #303050;
+  --floor:    #191926;
+  --door:     #5a4a20;
+  --water:    #1a3050;
+  --player:   #e8e8ff;
+  --agony:    #cc4444;
+  --essence:  #5577ee;
+  --hp:       #cc3333;
+  --mp:       #3355cc;
+  --heal:     #44cc66;
+  --hit:      #ffaa33;
+  --crit:     #ff4444;
+  --kill:     #ff3366;
+  --enemy:    #cc6644;
+  --boss:     #dd44cc;
+  --proj:     #ffee44;
+  --buff:     #44eeaa;
+  --soul-c:   #aaaacc;
+  --soul-r:   #4488ff;
+  --soul-e:   #cc44ff;
+  --soul-l:   #ffcc00;
+  --cmd:      #88ddff;
+  --turn:     #8888b8;
+  --class:    #aaddaa;
+  --trail1:   #3a3a5a;
+  --trail2:   #272740;
+  --trail3:   #1c1c30;
+  --trail4:   #141422;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  height: 100vh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 6px;
+  overflow: hidden;
+}
+
+#game {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  width: 100%;
+  max-width: 1200px;
+  height: calc(100vh - 12px);
+}
+
+/* ── LEFT PANEL ── */
+#panel-left {
+  width: 156px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 8px 8px;
+  overflow: hidden;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── CENTER ── */
+#panel-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── RIGHT PANEL ── */
+#panel-right {
+  width: 170px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 8px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 13px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dim) transparent;
+}
+
+/* ── PANEL SHARED ELEMENTS ── */
+.panel-title {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 2px 0 3px;
+}
+.panel-divider {
+  border-top: 1px solid var(--border);
+  margin: 5px 0;
+}
+.help-block {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 6px;
+  margin: 3px 0;
+}
+.hk {
+  color: var(--cmd);
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+.hd {
+  color: var(--turn);
+  font-size: 12.5px;
+}
+.help-note {
+  color: var(--turn);
+  font-size: 12.5px;
+  line-height: 1.7;
+  margin: 3px 0;
+}
+#ability-hint {
+  margin-top: 3px;
+}
+.ab-entry {
+  margin: 4px 0;
+}
+.ab-name { color: var(--cmd); }
+.ab-cost { color: var(--mp); }
+.ab-desc { color: var(--turn); font-size: 11.5px; line-height: 1.4; }
+
+/* ── HUD ── */
+#hud {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  white-space: pre;
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+/* ── MAP ── */
+#map-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+#map {
+  font-size: 13.5px;
+  line-height: 1.35;
+  padding: 3px 5px;
+  white-space: pre;
+  user-select: none;
+  letter-spacing: 0.5px;
+}
+
+/* ── LOG ── */
+#log-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-top: none;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dim) transparent;
+}
+#input-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#prompt-glyph { color: var(--cmd); flex-shrink: 0; }
+#terminal-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--player);
+  font-family: inherit;
+  font-size: 12px;
+  flex: 1;
+  caret-color: var(--cmd);
+}
+#terminal-input::placeholder { color: var(--muted); }
+
+/* ── ENEMY PANEL / INITIATIVE TRACKER ── */
+.init-entry {
+  margin: 3px 0 5px;
+  line-height: 1.5;
+  padding-left: 3px;
+  border-left: 2px solid transparent;
+}
+.init-entry.targeted {
+  border-left-color: var(--cmd);
+}
+.init-active {
+  border-left-color: var(--player) !important;
+  background: rgba(232, 232, 255, 0.05);
+}
+/* Keep old class for any fallback references */
+.enemy-entry {
+  margin: 4px 0 6px;
+  line-height: 1.5;
+}
+.enemy-entry.targeted {
+  border-left: 2px solid var(--cmd);
+  padding-left: 3px;
+}
+.enemy-hp-row {
+  font-size: 10.5px;
+  color: var(--turn);
+}
+.enemy-dist {
+  font-size: 10px;
+  color: var(--muted);
+}
+.enemy-enraged {
+  color: var(--crit);
+  font-size: 10px;
+}
+
+/* ── LOG LINE TYPES ── */
+.log-normal  { color: var(--text); }
+.log-move    { color: var(--muted); font-size: 11px; }
+.log-system  { color: var(--turn); }
+.log-ability { color: var(--text); }
+.log-enemy   { color: var(--enemy); }
+.log-boss    { color: var(--boss); }
+.log-buff    { color: var(--buff); }
+.log-heal    { color: var(--heal); }
+.log-kill    { color: var(--kill); font-weight: bold; }
+.log-status  { color: var(--agony); }
+.log-soul    { color: var(--soul-e); }
+.log-echo    { color: var(--essence); }
+.log-input   { color: var(--muted); font-size: 11px; }
+.log-warn    { color: var(--hit); }
+.log-turn    { color: var(--dim); font-size: 11px; }
+.log-divider { color: var(--dim); }
+
+/* ── MAP SPAN CLASSES ── */
+.c-wall    { color: var(--wall-fg); }
+.c-floor   { color: var(--floor); }
+.c-door    { color: var(--door); }
+.c-water   { color: var(--water); }
+.c-player  { color: var(--player); font-weight: bold; }
+.c-enemy   { color: var(--enemy); }
+.c-boss    { color: var(--boss); font-weight: bold; }
+.c-proj    { color: var(--proj); }
+.c-agony   { color: var(--agony); }
+.c-essence { color: var(--essence); }
+.c-hp      { color: var(--hp); }
+.c-mp      { color: var(--mp); }
+.c-heal    { color: var(--heal); }
+.c-hit     { color: var(--hit); font-weight: bold; }
+.c-crit    { color: var(--crit); font-weight: bold; }
+.c-kill    { color: var(--kill); font-weight: bold; }
+.c-buff    { color: var(--buff); }
+.c-cmd     { color: var(--cmd); }
+.c-class   { color: var(--class); }
+.c-stat    { color: var(--text); }
+.c-prompt  { color: var(--muted); }
+.c-turn    { color: var(--turn); }
+.c-muted   { color: var(--muted); }
+
+/* Movement trail: fading dots behind the player */
+.c-trail-1 { color: var(--trail1); }
+.c-trail-2 { color: var(--trail2); }
+.c-trail-3 { color: var(--trail3); }
+.c-trail-4 { color: var(--trail4); }
+
+/* Ghost preview: planned-but-unconfirmed movement */
+.c-ghost-player { color: #5a5a90; }
+.c-ghost-path   { color: #3a3a60; }
+
+/* Soul rarities */
+.c-soul-common    { color: var(--soul-c); }
+.c-soul-rare      { color: var(--soul-r); }
+.c-soul-epic      { color: var(--soul-e); }
+.c-soul-legendary { color: var(--soul-l); font-weight: bold; }

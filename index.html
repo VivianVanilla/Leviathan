@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LEVIATHAN</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game">
+
+    <!-- ── LEFT: always-visible help panel ── -->
+    <div id="panel-left">
+
+      <div class="panel-title">MOVEMENT</div>
+      <div class="panel-divider"></div>
+      <div class="help-block">
+        <div class="hk">↑ ↓ ← →</div><div class="hd">step</div>
+        <div class="hk">ne nw se sw</div><div class="hd">diagonal</div>
+        <div class="hk">n 3</div><div class="hd">plan 3 steps</div>
+        <div class="hk">confirm / ↵</div><div class="hd">commit path</div>
+        <div class="hk">cancel</div><div class="hd">clear plan</div>
+      </div>
+
+      <div class="panel-divider" style="margin-top:6px"></div>
+      <div class="panel-title">ACTIONS</div>
+      <div class="panel-divider"></div>
+      <div class="help-block">
+        <div class="hk">cast &lt;name&gt;</div><div class="hd">use ability</div>
+        <div class="hk">target [n]</div><div class="hd">set target</div>
+        <div class="hk">wait / z</div><div class="hd">end turn</div>
+      </div>
+
+      <div class="panel-divider" style="margin-top:6px"></div>
+      <div class="panel-title">INFO</div>
+      <div class="panel-divider"></div>
+      <div class="help-block">
+        <div class="hk">look</div><div class="hd">nearby threats</div>
+        <div class="hk">stats</div><div class="hd">character</div>
+        <div class="hk">souls</div><div class="hd">augments</div>
+        <div class="hk">abilities</div><div class="hd">skill list</div>
+        <div class="hk">pick 1/2/3</div><div class="hd">soul offer</div>
+      </div>
+
+      <div class="panel-divider" style="margin-top:6px"></div>
+      <div class="panel-title">TURN</div>
+      <div class="panel-divider"></div>
+      <div class="help-note">Move SPEED tiles<br>then 1 action<br>then enemies go</div>
+
+      <div class="panel-divider" style="margin-top:6px"></div>
+      <div class="panel-title">ABILITIES</div>
+      <div class="panel-divider"></div>
+      <div id="ability-hint" class="help-note c-muted">— start game —</div>
+
+    </div>
+
+    <!-- ── CENTER: HUD + map + log ── -->
+    <div id="panel-center">
+      <div id="hud"></div>
+      <div id="map-container">
+        <pre id="map"></pre>
+      </div>
+      <div id="log-panel">
+        <div id="log"></div>
+        <div id="input-row">
+          <span id="prompt-glyph">&gt;&nbsp;</span>
+          <input type="text" id="terminal-input" autocomplete="off" spellcheck="false" placeholder="type a command or press arrow keys to move...">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: live enemy health panel ── -->
+    <div id="panel-right">
+      <div class="panel-title">THREATS</div>
+      <div class="panel-divider"></div>
+      <div id="enemy-list"><span class="c-muted">none</span></div>
+    </div>
+
+  </div>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
