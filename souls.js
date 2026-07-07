@@ -25,11 +25,6 @@ export const SOUL_POOL = [
     apply: (p) => { p.maxHp += 35; p.hp += 35; },
   },
   {
-    id: 'soul_swift', name: 'Swift Soul', rarity: 'common',
-    description: '+1 Speed (more tiles per turn).',
-    apply: (p) => { p.speed += 1; },
-  },
-  {
     id: 'soul_mend', name: 'Mending Soul', rarity: 'common',
     description: 'Restore 30 HP immediately.',
     apply: (p) => { p.hp = Math.min(p.maxHp, p.hp + 30); },
@@ -85,8 +80,8 @@ export const SOUL_POOL = [
   },
   {
     id: 'soul_leviathan', name: 'Leviathan\'s Soul', rarity: 'legendary',
-    description: '+40 Agony, +40 Essence, +20 max HP, +1 Speed.',
-    apply: (p) => { p.agony += 40; p.essence += 40; p.maxHp += 20; p.hp += 20; p.speed += 1; },
+    description: '+40 Agony, +40 Essence, +20 max HP, ',
+    apply: (p) => { p.agony += 40; p.essence += 40; p.maxHp += 20; p.hp += 20;  },
   },
 
 ];

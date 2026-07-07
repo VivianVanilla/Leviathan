@@ -2,23 +2,22 @@
 //
 // Three core stats:
 //   Health  — hit points, how much punishment you take
-//   Agony   — physical power, scales physical/bleed abilities
+//   Agony   — physical power, scales physical abilities
 //   Essence — magic/spiritual power; max MP = floor(Essence / 2)
 //
 // Adding a new class: copy one entry in CLASSES and adjust.
 
 export const CLASSES = {
 
-  Reaper: {
-    description: 'A warrior who channels raw pain into devastating strikes. Agony-focused melee.',
+  Moondrifter: {
+    description: 'The draconic Amalgam of the Moon. Large HP, medium agony and low essence.',
     color: 'c-agony',
     baseStats: {
-      maxHp:   120,
-      agony:    80,
-      essence:  20,
-      speed:     4,
+      maxHp:   80,
+      agony:    20,
+      essence:  10,
     },
-    abilities: ['cleave', 'warcry', 'rend'],
+    abilities: ['cleave', 'cryofagony', 'rend'],
     sprite: {
       width: 1, height: 1,
       // Each entry = one animation frame (cycles at 400ms each)
@@ -26,30 +25,28 @@ export const CLASSES = {
     },
   },
 
-  Phantom: {
-    description: 'A spectral caster who tears reality through Essence. Ranged, glass cannon.',
+  Twinshadows: {
+    description: 'Twin spirits with low agony and high essence. They constantly fight.',
     color: 'c-essence',
     baseStats: {
-      maxHp:    70,
-      agony:    20,
-      essence: 100,
-      speed:     3,
+      maxHp:    50,
+      agony:    10,
+      essence: 80,
     },
     abilities: ['void_bolt', 'blink', 'wraith_grasp'],
     sprite: {
       width: 1, height: 1,
-      frames: ['%', '&', '%', '&', '%', '%', '&', '%'],
+      frames: ['%Y', '&X', '%Y', '&X', '%Y', '%X', '&Y', '%X'],
     },
   },
 
-  Revenant: {
-    description: 'Death-touched and balanced. Hybrid Agony+Essence scaling with unique soul synergies.',
+  Tempest: {
+    description: 'The reaper of the ocean. Low HP, high agony and high essence.',
     color: 'c-player',
     baseStats: {
-      maxHp:    90,
-      agony:    50,
-      essence:  60,
-      speed:     4,
+      maxHp:    20,
+      agony:    80,
+      essence:  80,
     },
     abilities: ['soul_strike', 'drain', 'surge'],
     sprite: {
@@ -82,22 +79,14 @@ export function createPlayer(className, name = 'Unknown') {
     get maxMp() { return Math.floor(this.essence / 2); },
     mp:       maxMp,
 
-    speed:    st.speed,
     sprite:   { ...cls.sprite, frames: [...cls.sprite.frames] },
     abilities: [...cls.abilities],
 
-    souls:         [],   // active soul augments
     statusEffects: [],   // { type, damage?, duration, remaining }
+    inventory:     [],   // items carried (picked up from world, used in battle)
 
     level: 1,
     xp:    0,
-
-    // Soul-flag modifiers (set by souls.js apply())
-    _vampireDrain: 0,
-    _echoShot:     false,
-    _berserker:    false,
-    _lichKill:     false,
-    _hollowSoul:   false,
-    _voidSoul:     false,
+    maxXp: 100,
   };
 }

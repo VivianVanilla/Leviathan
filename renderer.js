@@ -1,15 +1,15 @@
 // renderer.js — ASCII rendering engine for LEVIATHAN
-// Handles: HUD, map (solid walls, animated sprites, movement trail),
-//          combat log, enemy health panel (right), ability hints (left)
+
+import { DODGE_BOX } from './battle.js';
+import { ABILITIES }  from './abilities.js';
 
 const SUP = ['', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
 
 export class Renderer {
-  constructor(mapEl, hudEl, logEl, enemyPanelEl, abilityHintEl) {
+  constructor(mapEl, hudEl, logEl, abilityHintEl) {
     this.mapEl         = mapEl;
     this.hudEl         = hudEl;
     this.logEl         = logEl;
-    this.enemyPanelEl  = enemyPanelEl;
     this.abilityHintEl = abilityHintEl;
     this.frame         = 0;
     this._timer        = null;
@@ -18,22 +18,19 @@ export class Renderer {
   startAnimation(getState) {
     this._timer = setInterval(() => {
       this.frame = (this.frame + 1) % 8;
-      const state = getState();
-      if (state) {
-        this.renderMap(state);
-        this.renderEnemyPanel(state);
-      }
+      const s = getState();
+      if (!s) return;
+      if (s.phase === 'battle') this.renderBattle(s);
+      else                      this.renderMap(s);
     }, 400);
   }
 
-  stopAnimation() {
-    if (this._timer) clearInterval(this._timer);
-  }
+  stopAnimation() { clearInterval(this._timer); }
 
   render(state) {
     this.renderHUD(state);
-    this.renderMap(state);
-    this.renderEnemyPanel(state);
+    if (state.phase === 'battle') this.renderBattle(state);
+    else                          this.renderMap(state);
   }
 
   // ── HUD ──────────────────────────────────────────────────────────────────
@@ -43,54 +40,41 @@ export class Renderer {
     const maxMp = p.maxMp;
     const hpBar = this._bar(p.hp, p.maxHp, 14, '█', '░', 'c-hp');
     const mpBar = this._bar(p.mp, maxMp,   14, '█', '░', 'c-mp');
-
-    const actGlyph = state.actLeft > 0
-      ? `<span class="c-cmd">■</span>`
-      : `<span class="c-turn">□</span>`;
+    const xpBar = this._bar(p.xp, p.maxXp, 10, '█', '░', 'c-essence');
 
     const effectText = p.statusEffects.length
-      ? ' · ' + p.statusEffects.map(e =>
-          `<span class="c-agony">[${e.type}·${e.remaining}]</span>`).join(' ')
-      : '';
-
-    const targetText = state.target && state.target.hp > 0
-      ? `  ⟶ <span class="c-enemy">${state.target.name}</span> ` +
-        this._bar(state.target.hp, state.target.maxHp, 8, '█', '░', 'c-agony')
+      ? ' · ' + p.statusEffects.map(e => `<span class="c-agony">[${e.type}·${e.remaining}]</span>`).join(' ')
       : '';
 
     this.hudEl.innerHTML =
       `<span class="c-player">${p.name}</span> · ` +
-      `<span class="c-class">${p.class}</span> · ` +
-      `Turn <span class="c-turn">${state.turn}</span>` +
-      targetText + '\n' +
+      `<span class="c-class">${p.class}</span>` + '\n' +
       `HP ${hpBar} <span class="c-hp">${p.hp}/${p.maxHp}</span>  ` +
       `MP ${mpBar} <span class="c-mp">${p.mp}/${maxMp}</span>  ` +
-      `MOVEMENT <span class="c-stat">${state.movLeft}/${p.speed}</span>  ` +
-      `ACT ${actGlyph}  ` +
-      `AGONY <span class="c-agony">${p.agony}</span>  ` +
-      `ESSENCE <span class="c-essence">${p.essence}</span>` +
+      `XP ${xpBar} <span class="c-essence">${p.xp}/${p.maxXp}</span>` +
       effectText;
   }
 
-  // ── MAP ──────────────────────────────────────────────────────────────────
+  // ── Overworld map ─────────────────────────────────────────────────────────
 
   renderMap(state) {
-    const { map, entities, player, trail = [] } = state;
+    const { map, entities, player, trail = [], floorItems = [] } = state;
 
-    // Trail lookup: key → age index (0 = most recent)
     const trailMap = new Map();
     trail.forEach((t, i) => {
       const k = `${t.x},${t.y}`;
       if (!trailMap.has(k)) trailMap.set(k, i);
     });
 
-    // Entity cell overrides — count per type for superscript numbering
+    const over = new Map();
+    for (const it of floorItems) {
+      over.set(`${it.x},${it.y}`, { label: '✦', cls: 'c-item' });
+    }
+
     const typeCount = {}, typeSeq = {};
     for (const e of entities) {
       if (e.hp > 0) typeCount[e.type] = (typeCount[e.type] || 0) + 1;
     }
-
-    const over = new Map();
     for (const e of entities) {
       if (e.hp <= 0) continue;
       typeSeq[e.type] = (typeSeq[e.type] || 0) + 1;
@@ -100,9 +84,9 @@ export class Renderer {
 
       if (e.sprite.height > 1) {
         for (let dy = 0; dy < e.sprite.height; dy++) {
-          const rowStr = e.sprite.frames[fi][dy] || '';
+          const row = e.sprite.frames[fi][dy] || '';
           for (let dx = 0; dx < e.sprite.width; dx++) {
-            const ch    = rowStr[dx] || ' ';
+            const ch    = row[dx] || ' ';
             const label = (dx === 0 && dy === 0 && num) ? ch + num : ch;
             over.set(`${e.x + dx},${e.y + dy}`, { label, cls });
           }
@@ -113,28 +97,8 @@ export class Renderer {
       }
     }
 
-    // Player on top
     const pfi = this.frame % player.sprite.frames.length;
-    over.set(`${player.x},${player.y}`, {
-      label: player.sprite.frames[pfi],
-      cls: 'c-player',
-    });
-
-    // Ghost preview: planned-but-unconfirmed movement path
-    const preview = state.preview;
-    if (preview?.path?.length > 0) {
-      for (let i = 0; i < preview.path.length - 1; i++) {
-        const pos = preview.path[i];
-        const k = `${pos.x},${pos.y}`;
-        if (!over.has(k)) over.set(k, { label: '·', cls: 'c-ghost-path' });
-      }
-      if (preview.cursor) {
-        const k = `${preview.cursor.x},${preview.cursor.y}`;
-        if (k !== `${player.x},${player.y}`) {
-          over.set(k, { label: player.sprite.frames[pfi], cls: 'c-ghost-player' });
-        }
-      }
-    }
+    over.set(`${player.x},${player.y}`, { label: player.sprite.frames[pfi], cls: 'c-player' });
 
     const rows = [];
     for (let y = 0; y < map.height; y++) {
@@ -157,81 +121,123 @@ export class Renderer {
     this.mapEl.innerHTML = rows.join('\n');
   }
 
-  // ── ENEMY PANEL (right) ───────────────────────────────────────────────────
+  // ── Battle screen ─────────────────────────────────────────────────────────
 
-  renderEnemyPanel(state) {
-    if (!this.enemyPanelEl) return;
-    const alive = state.entities.filter(e => e.hp > 0);
+  renderBattle(state) {
+    const bt    = state.battle;
+    if (!bt) return;
+    const enemy = bt.enemy;
+    const p     = state.player;
+    const cls   = enemy.isBoss ? 'c-boss' : 'c-enemy';
+    const flash = bt.hitFlash > 0;
+    const eCls  = flash ? 'c-hit' : cls;
 
-    if (!alive.length) {
-      this.enemyPanelEl.innerHTML = '<span class="c-muted">area clear</span>';
-      return;
+    const lines = [];
+
+    lines.push('');
+    const hpBar = this._bar(enemy.hp, enemy.maxHp, 18, '█', '░', eCls);
+    lines.push(
+      `  <span class="${eCls}">${this._esc(enemy.name.toUpperCase())}</span>` +
+      `   HP ${hpBar} <span class="${eCls}">${enemy.hp}/${enemy.maxHp}</span>`
+    );
+    lines.push('');
+
+    const spr = enemy.encounter?.largeSprite ?? [enemy.sprite.frames[0] ?? '?'];
+    for (const sl of spr) {
+      lines.push(`      <span class="${eCls}">${this._esc(sl)}</span>`);
+    }
+    lines.push('');
+
+    if (bt.dialogue) {
+      lines.push(`  <span class="c-muted">"${this._esc(bt.dialogue)}"</span>`);
+      lines.push('');
     }
 
-    const typeCount = {}, typeSeq = {};
-    for (const e of alive) typeCount[e.type] = (typeCount[e.type] || 0) + 1;
+    const BW = DODGE_BOX.W, BH = DODGE_BOX.H;
+    const sX = bt.soul.x, sY = bt.soul.y;
 
-    let html = '';
-    for (const e of alive) {
-      typeSeq[e.type] = (typeSeq[e.type] || 0) + 1;
-      const num      = typeCount[e.type] > 1 ? SUP[Math.min(typeSeq[e.type], 9)] : '';
-      const fi       = this.frame % e.sprite.frames.length;
-      const cls      = e.isBoss ? 'c-boss' : 'c-enemy';
-      const isTgt    = state.target === e;
-      const isActive = state.activeEnemy === e.id;
-      const dist     = Math.abs(state.player.x - e.x) + Math.abs(state.player.y - e.y);
-
-      const dispCh = typeof e.sprite.frames[fi] === 'string'
-        ? e.sprite.frames[fi][0]
-        : (e.sprite.frames[fi][0]?.[0] ?? '?');
-
-      const hpBar = this._bar(e.hp, e.maxHp, 10, '█', '░', cls);
-
-      html += `<div class="init-entry${isActive ? ' init-active' : ''}${isTgt ? ' targeted' : ''}">`;
-      html += `<span class="${cls}">${this._esc(dispCh)}${num}</span> `;
-      html += `<span class="${cls}">${this._esc(e.name)}</span>`;
-      if (e.enraged) html += ` <span class="enemy-enraged">!</span>`;
-      html += `\n<div class="enemy-hp-row">${hpBar} ${e.hp}/${e.maxHp}</div>`;
-      html += `<div class="enemy-dist">dist ${dist}</div>`;
-      html += `</div>`;
+    const bulletAt = new Map();
+    for (const b of bt.bullets) {
+      const bx = Math.round(b.x), by = Math.round(b.y);
+      if (bx >= 0 && bx < BW && by >= 0 && by < BH) bulletAt.set(`${bx},${by}`, b);
     }
 
-    this.enemyPanelEl.innerHTML = html;
+    const soulFlashing = bt.soulFlash > 0 && Math.floor(bt.soulFlash / 2) % 2 === 0;
+    const isPlayerTurn = bt.turnPhase === 'player';
+    const phaseLabel   = isPlayerTurn
+      ? '<span class="c-buff">★ YOUR TURN ★</span>'
+      : `<span class="c-muted">DODGE  ${bt.dodgeTicks}</span>`;
+
+    lines.push('  ┌' + '─'.repeat(BW) + '┐');
+    for (let y = 0; y < BH; y++) {
+      let row = '  │';
+      for (let x = 0; x < BW; x++) {
+        const k = `${x},${y}`;
+        if (x === sX && y === sY) {
+          row += soulFlashing
+            ? '<span class="bt-soul-hit">✦</span>'
+            : '<span class="bt-soul">⦿</span>';
+        } else if (bulletAt.has(k)) {
+          const b = bulletAt.get(k);
+          const bStyle = bt.enemyColor ? ` style="color:${bt.enemyColor}"` : '';
+          row += `<span class="${b.cls}"${bStyle}>${this._esc(b.char)}</span>`;
+        } else {
+          row += ' ';
+        }
+      }
+      row += '│';
+      if (y === 0) row += `  ${phaseLabel}`;
+      if (isPlayerTurn) {
+        if (y === 3) row += `  <span class="c-cmd">type ability name to attack</span>`;
+        if (y === 4) row += `  <span class="c-cmd">or type 'flee'</span>`;
+      } else {
+        if (y === 3) row += `  <span class="c-muted">arrows: dodge</span>`;
+      }
+      lines.push(row);
+    }
+    lines.push('  └' + '─'.repeat(BW) + '┘');
+
+    lines.push('');
+    lines.push('  ' + p.abilities.map(key => {
+      const ab = ABILITIES[key];
+      const mp = ab?.mpCost > 0 ? `<span class="c-mp">${ab.mpCost}mp</span>` : '';
+      return `<span class="c-cmd">${key}</span>${mp ? ' '+mp : ''}`;
+    }).join('   '));
+
+    this.mapEl.innerHTML = lines.join('\n');
   }
 
-  // ── ABILITY HINTS (left panel, populated once on game start) ──────────────
+  // ── Ability hints (left panel) ────────────────────────────────────────────
 
   updateAbilityHints(player, ABILITIES) {
     if (!this.abilityHintEl) return;
     let html = '';
-    for (const key of player.abilities) {
+    player.abilities.forEach((key, i) => {
       const ab = ABILITIES[key];
-      if (!ab) continue;
+      if (!ab) return;
       const cost = ab.mpCost > 0 ? `<span class="ab-cost">${ab.mpCost}mp</span> ` : '';
       html += `<div class="ab-entry">` +
-        `<div><span class="ab-name">${key}</span> ${cost}</div>` +
-        `<div class="ab-desc">${ab.description.slice(0, 36)}</div>` +
+        `<div><span class="ab-name">[${i+1}] ${key}</span> ${cost}</div>` +
+        `<div class="ab-desc">${ab.description}</div>` +
         `</div>`;
-    }
+    });
     this.abilityHintEl.innerHTML = html || '<span class="c-muted">none</span>';
   }
 
-  // ── LOG ───────────────────────────────────────────────────────────────────
+  // ── Log ───────────────────────────────────────────────────────────────────
 
   addLog(html, type = 'normal') {
     const line = document.createElement('div');
     line.className = `log-${type}`;
     line.innerHTML = html;
     this.logEl.appendChild(line);
-    while (this.logEl.children.length > 80) {
-      this.logEl.removeChild(this.logEl.firstChild);
-    }
+    while (this.logEl.children.length > 100) this.logEl.removeChild(this.logEl.firstChild);
     this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   clearLog() { this.logEl.innerHTML = ''; }
 
-  // ── TILE + HELPERS ────────────────────────────────────────────────────────
+  // ── Tile + helpers ────────────────────────────────────────────────────────
 
   _tile(ch) {
     switch (ch) {
@@ -239,6 +245,7 @@ export class Renderer {
       case '.': return `<span class="c-floor">·</span>`;
       case '+': return `<span class="c-door">+</span>`;
       case '~': return `<span class="c-water">≈</span>`;
+      case '>': return `<span class="c-exit">></span>`;
       default:  return `<span class="c-floor"> </span>`;
     }
   }
